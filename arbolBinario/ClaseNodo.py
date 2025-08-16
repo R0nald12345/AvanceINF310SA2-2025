@@ -22,3 +22,6 @@ class ClaseNodo:
     
     def setValor(self, valor):
         self.valor = valor
+
+    def verificarRaiz(self):
+        return self.hijoIzquierdo is None and self.hijoDerecho is None
