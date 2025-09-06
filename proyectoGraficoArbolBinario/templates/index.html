@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Árbol Binario - Interfaz Gráfica</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>🌳 Árbol Binario de Búsqueda</h1>
+            <p>Interfaz gráfica para operaciones con árboles binarios</p>
+        </header>
+
+        <main>
+            <!-- Panel de Operaciones -->
+            <section class="operations-panel">
+                <h2>Operaciones</h2>
+
+                <!-- Insertar -->
+                <div class="operation-group">
+                    <h3>Insertar Valor</h3>
+                    <!-- Insertar -->
+                    <form id="insertForm">
+                        <input type="number" id="insertValue" name="valor" placeholder="Ingresa un número" required>
+                        <button type="submit">Insertar</button>
+                    </form>
+
+                    <!-- Eliminar -->
+                    <form id="deleteForm">
+                        <input type="number" id="deleteValue" name="valor" placeholder="Valor a eliminar" required>
+                        <button type="submit">Eliminar</button>
+                    </form>
+
+                    <!-- Buscar -->
+                    <form id="searchForm">
+                        <input type="number" id="searchValue" name="valor" placeholder="Valor a buscar" required>
+                        <button type="submit">Buscar</button>
+                    </form>
+                </div>
+
+                <!-- Eliminar -->
+                <div class="operation-group">
+                    <h3>Eliminar Valor</h3>
+                    <form id="deleteForm">
+                        <input type="number" id="deleteValue" placeholder="Valor a eliminar" required>
+                        <button type="submit">Eliminar</button>
+                    </form>
+                </div>
+
+                <!-- Buscar -->
+                <div class="operation-group">
+                    <h3>Buscar Valor</h3>
+                    <form id="searchForm">
+                        <input type="number" id="searchValue" placeholder="Valor a buscar" required>
+                        <button type="submit">Buscar</button>
+                    </form>
+                </div>
+
+                <!-- Botones de Utilidad -->
+                <div class="utility-buttons">
+                    <button id="showTraversals" class="btn-secondary">Ver Recorridos</button>
+                    <button id="showInfo" class="btn-secondary">Información</button>
+                    <button id="loadExample" class="btn-secondary">Cargar Ejemplo</button>
+                    <button id="clearTree" class="btn-danger">Limpiar Árbol</button>
+                </div>
+            </section>
+
+            <!-- Panel de Resultados -->
+            <section class="results-panel">
+                <h2>Resultados</h2>
+
+                <!-- Área de mensajes -->
+                <div id="messageArea" class="message-area"></div>
+
+                <!-- Información del árbol -->
+                <div class="info-cards">
+                    <div class="info-card">
+                        <h4>Nodos</h4>
+                        <span id="nodeCount">0</span>
+                    </div>
+                    <div class="info-card">
+                        <h4>Altura</h4>
+                        <span id="treeHeight">0</span>
+                    </div>
+                    <div class="info-card">
+                        <h4>Estado</h4>
+                        <span id="treeStatus">Vacío</span>
+                    </div>
+                </div>
+
+                <!-- Estructura visual del árbol -->
+                <div class="tree-structure">
+                    <h3>Estructura del Árbol</h3>
+                    <pre id="treeDisplay">Árbol vacío</pre>
+                </div>
+
+                <!-- Recorridos -->
+                <div id="traversalsSection" class="traversals-section" style="display: none;">
+                    <h3>Recorridos del Árbol</h3>
+                    <div class="traversal-item">
+                        <strong>InOrden (Izq → Raíz → Der):</strong>
+                        <span id="inorderResult"></span>
+                    </div>
+                    <div class="traversal-item">
+                        <strong>PreOrden (Raíz → Izq → Der):</strong>
+                        <span id="preorderResult"></span>
+                    </div>
+                    <div class="traversal-item">
+                        <strong>PostOrden (Izq → Der → Raíz):</strong>
+                        <span id="postorderResult"></span>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // Variables globales
+        let currentNodeCount = 0;
+
+        // Elementos del DOM
+        const messageArea = document.getElementById('messageArea');
+        const nodeCount = document.getElementById('nodeCount');
+        const treeHeight = document.getElementById('treeHeight');
+        const treeStatus = document.getElementById('treeStatus');
+        const treeDisplay = document.getElementById('treeDisplay');
+        const traversalsSection = document.getElementById('traversalsSection');
+
+        // Función para mostrar mensajes
+        function showMessage(message, type = 'info') {
+            messageArea.innerHTML = `<div class="message ${type}">${message}</div>`;
+            setTimeout(() => {
+                messageArea.innerHTML = '';
+            }, 5000);
+        }
+
+        // Función para actualizar información del árbol
+        function updateTreeInfo(data) {
+            if (data.cantidad_nodos !== undefined) {
+                currentNodeCount = data.cantidad_nodos;
+                nodeCount.textContent = currentNodeCount;
+                treeStatus.textContent = currentNodeCount === 0 ? 'Vacío' : 'Con datos';
+            }
+            if (data.estructura) {
+                treeDisplay.textContent = data.estructura;
+            }
+        }
+
+        // Función para obtener información completa
+        async function getTreeInfo() {
+            try {
+                const response = await fetch('/informacion');
+                const data = await response.json();
+                if (data.success) {
+                    nodeCount.textContent = data.cantidad_nodos;
+                    treeHeight.textContent = data.altura;
+                    treeStatus.textContent = data.vacio ? 'Vacío' : 'Con datos';
+                    treeDisplay.textContent = data.estructura;
+                    currentNodeCount = data.cantidad_nodos;
+                }
+            } catch (error) {
+                console.error('Error al obtener información:', error);
+            }
+        }
+
+        // Form Insertar
+        document.getElementById('insertForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const value = document.getElementById('insertValue').value;
+
+            try {
+                const response = await fetch('/insertar', {
+                    method: 'POST',
+                    body: new FormData(e.target)
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    showMessage(data.mensaje, 'success');
+                    updateTreeInfo(data);
+                    document.getElementById('insertValue').value = '';
+                } else {
+                    showMessage(data.mensaje, 'error');
+                }
+            } catch (error) {
+                showMessage('Error de conexión', 'error');
+            }
+        });
+
+        // Form Eliminar
+        document.getElementById('deleteForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const value = document.getElementById('deleteValue').value;
+
+            try {
+                const response = await fetch('/eliminar', {
+                    method: 'POST',
+                    body: new FormData(e.target)
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    showMessage(data.mensaje, 'success');
+                    updateTreeInfo(data);
+                    document.getElementById('deleteValue').value = '';
+                } else {
+                    showMessage(data.mensaje, 'error');
+                }
+            } catch (error) {
+                showMessage('Error de conexión', 'error');
+            }
+        });
+
+        // Form Buscar
+        document.getElementById('searchForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            try {
+                const response = await fetch('/buscar', {
+                    method: 'POST',
+                    body: new FormData(e.target)
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    showMessage(data.mensaje, data.encontrado ? 'success' : 'warning');
+                    document.getElementById('searchValue').value = '';
+                } else {
+                    showMessage(data.mensaje, 'error');
+                }
+            } catch (error) {
+                showMessage('Error de conexión', 'error');
+            }
+        });
+
+        // Mostrar recorridos
+        document.getElementById('showTraversals').addEventListener('click', async () => {
+            try {
+                const response = await fetch('/recorridos');
+                const data = await response.json();
+
+                if (data.success) {
+                    document.getElementById('inorderResult').textContent = data.inorden.join(', ');
+                    document.getElementById('preorderResult').textContent = data.preorden.join(', ');
+                    document.getElementById('postorderResult').textContent = data.postorden.join(', ');
+                    traversalsSection.style.display = 'block';
+                    showMessage('Recorridos calculados correctamente', 'success');
+                } else {
+                    showMessage(data.mensaje, 'error');
+                    traversalsSection.style.display = 'none';
+                }
+            } catch (error) {
+                showMessage('Error de conexión', 'error');
+            }
+        });
+
+        // Mostrar información
+        document.getElementById('showInfo').addEventListener('click', async () => {
+            await getTreeInfo();
+            showMessage('Información actualizada', 'success');
+        });
+
+        // Cargar ejemplo
+        document.getElementById('loadExample').addEventListener('click', async () => {
+            try {
+                const response = await fetch('/ejemplo', {
+                    method: 'POST'
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    showMessage(data.mensaje + '. Valores: ' + data.valores_insertados.join(', '), 'success');
+                    updateTreeInfo(data);
+                    traversalsSection.style.display = 'none';
+                } else {
+                    showMessage(data.mensaje, 'error');
+                }
+            } catch (error) {
+                showMessage('Error de conexión', 'error');
+            }
+        });
+
+        // Limpiar árbol
+        document.getElementById('clearTree').addEventListener('click', async () => {
+            if (confirm('¿Estás seguro de que quieres limpiar todo el árbol?')) {
+                try {
+                    const response = await fetch('/limpiar', {
+                        method: 'POST'
+                    });
+                    const data = await response.json();
+
+                    if (data.success) {
+                        showMessage(data.mensaje, 'success');
+                        updateTreeInfo(data);
+                        treeHeight.textContent = '0';
+                        traversalsSection.style.display = 'none';
+                    } else {
+                        showMessage(data.mensaje, 'error');
+                    }
+                } catch (error) {
+                    showMessage('Error de conexión', 'error');
+                }
+            }
+        });
+
+        // Cargar información inicial
+        window.addEventListener('load', getTreeInfo);
+    </script>
+</body>
+
+</html>
