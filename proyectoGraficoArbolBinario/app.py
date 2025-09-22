@@ -10,6 +10,7 @@ def index():
     """Página principal"""
     return render_template('index.html')
 
+
 @app.route('/insertar', methods=['POST'])
 def insertar():
     """Insertar un valor en el árbol"""
